@@ -35,6 +35,7 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/logging/logkey"
+	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
 	"knative.dev/pkg/system"
 	"knative.dev/pkg/version"
@@ -85,6 +86,9 @@ func main() {
 
 	// Watch the logging config map and dynamically update logging levels.
 	configMapWatcher := configmap.NewInformedWatcher(kubeClient, system.Namespace())
+	// Watch the observability config map and dynamically update metrics exporter.
+	configMapWatcher.Watch(metrics.ConfigMapName(), metrics.UpdateExporterFromConfigMap(component, logger))
+	// Watch the observability config map and dynamically update request logs.
 	configMapWatcher.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
 
 	store := apiconfig.NewStore(logger.Named("config-store"))
@@ -92,6 +96,11 @@ func main() {
 
 	if err = configMapWatcher.Start(stopCh); err != nil {
 		logger.Fatalw("Failed to start the ConfigMap watcher", zap.Error(err))
+	}
+
+	reporter, err := webhook.NewStatsReporter()
+	if err != nil {
+		logger.Fatalw("Failed to create stats reporter", zap.Error(err))
 	}
 
 	options := webhook.ControllerOptions{
@@ -120,6 +129,7 @@ func main() {
 			net.SchemeGroupVersion.WithKind("ServerlessService"):             &net.ServerlessService{},
 		},
 		Logger:                logger,
+		StatsReporter:         reporter,
 		DisallowUnknownFields: true,
 
 		// Decorate contexts with the current state of the config.
