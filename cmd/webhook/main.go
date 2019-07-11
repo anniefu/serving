@@ -98,11 +98,6 @@ func main() {
 		logger.Fatalw("Failed to start the ConfigMap watcher", zap.Error(err))
 	}
 
-	reporter, err := webhook.NewStatsReporter()
-	if err != nil {
-		logger.Fatalw("Failed to create stats reporter", zap.Error(err))
-	}
-
 	options := webhook.ControllerOptions{
 		ServiceName:    "webhook",
 		DeploymentName: "webhook",
@@ -111,32 +106,33 @@ func main() {
 		SecretName:     "webhook-certs",
 		WebhookName:    "webhook.serving.knative.dev",
 	}
-	controller := webhook.AdmissionController{
-		Client:  kubeClient,
-		Options: options,
-		Handlers: map[schema.GroupVersionKind]webhook.GenericCRD{
-			v1alpha1.SchemeGroupVersion.WithKind("Revision"):                 &v1alpha1.Revision{},
-			v1alpha1.SchemeGroupVersion.WithKind("Configuration"):            &v1alpha1.Configuration{},
-			v1alpha1.SchemeGroupVersion.WithKind("Route"):                    &v1alpha1.Route{},
-			v1alpha1.SchemeGroupVersion.WithKind("Service"):                  &v1alpha1.Service{},
-			v1beta1.SchemeGroupVersion.WithKind("Revision"):                  &v1beta1.Revision{},
-			v1beta1.SchemeGroupVersion.WithKind("Configuration"):             &v1beta1.Configuration{},
-			v1beta1.SchemeGroupVersion.WithKind("Route"):                     &v1beta1.Route{},
-			v1beta1.SchemeGroupVersion.WithKind("Service"):                   &v1beta1.Service{},
-			autoscalingv1alpha1.SchemeGroupVersion.WithKind("PodAutoscaler"): &autoscalingv1alpha1.PodAutoscaler{},
-			net.SchemeGroupVersion.WithKind("Certificate"):                   &net.Certificate{},
-			net.SchemeGroupVersion.WithKind("ClusterIngress"):                &net.ClusterIngress{},
-			net.SchemeGroupVersion.WithKind("ServerlessService"):             &net.ServerlessService{},
-		},
-		Logger:                logger,
-		StatsReporter:         reporter,
-		DisallowUnknownFields: true,
 
-		// Decorate contexts with the current state of the config.
-		WithContext: func(ctx context.Context) context.Context {
-			return v1beta1.WithUpgradeViaDefaulting(store.ToContext(ctx))
-		},
+	handlers := map[schema.GroupVersionKind]webhook.GenericCRD{
+		v1alpha1.SchemeGroupVersion.WithKind("Revision"):                 &v1alpha1.Revision{},
+		v1alpha1.SchemeGroupVersion.WithKind("Configuration"):            &v1alpha1.Configuration{},
+		v1alpha1.SchemeGroupVersion.WithKind("Route"):                    &v1alpha1.Route{},
+		v1alpha1.SchemeGroupVersion.WithKind("Service"):                  &v1alpha1.Service{},
+		v1beta1.SchemeGroupVersion.WithKind("Revision"):                  &v1beta1.Revision{},
+		v1beta1.SchemeGroupVersion.WithKind("Configuration"):             &v1beta1.Configuration{},
+		v1beta1.SchemeGroupVersion.WithKind("Route"):                     &v1beta1.Route{},
+		v1beta1.SchemeGroupVersion.WithKind("Service"):                   &v1beta1.Service{},
+		autoscalingv1alpha1.SchemeGroupVersion.WithKind("PodAutoscaler"): &autoscalingv1alpha1.PodAutoscaler{},
+		net.SchemeGroupVersion.WithKind("Certificate"):                   &net.Certificate{},
+		net.SchemeGroupVersion.WithKind("ClusterIngress"):                &net.ClusterIngress{},
+		net.SchemeGroupVersion.WithKind("ServerlessService"):             &net.ServerlessService{},
 	}
+
+	// Decorate contexts with the current state of the config.
+	ctxFunc := func(ctx context.Context) context.Context {
+		return v1beta1.WithUpgradeViaDefaulting(store.ToContext(ctx))
+	}
+
+	controller, err := webhook.NewAdmissionController(kubeClient, options, handlers, logger, ctxFunc, true)
+
+	if err != nil {
+		logger.Fatalw("Failed to create admission controller", zap.Error(err))
+	}
+
 	if err = controller.Run(stopCh); err != nil {
 		logger.Fatalw("Failed to start the admission controller", zap.Error(err))
 	}

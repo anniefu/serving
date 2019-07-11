@@ -41,6 +41,9 @@ spec:
         # This is the Go import path for the binary that is containerized
         # and substituted here.
         image: github.com/knative/serving/cmd/webhook
+        ports:
+        - name: metrics-port
+          containerPort: 9090
         resources:
           # Request 2x what we saw running e2e
           requests:
