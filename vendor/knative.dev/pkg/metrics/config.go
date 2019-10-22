@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"strconv"
@@ -46,6 +47,9 @@ const (
 	BackendDestinationKey            = "metrics.backend-destination"
 	ReportingPeriodKey               = "metrics.reporting-period-seconds"
 	StackdriverProjectIDKey          = "metrics.stackdriver-project-id"
+	StackdriverProjectLocationKey    = "metrics.stackdriver-project-location"
+	StackdriverClusterNameKey        = "metrics.stackdriver-cluster-name"
+	StackdriverServiceAccountKeyKey  = "metrics.stackdriver-service-account-key"
 
 	// Stackdriver is used for Stackdriver backend
 	Stackdriver metricsBackend = "stackdriver"
@@ -98,15 +102,7 @@ type metricsConfig struct {
 	prometheusPort int
 
 	// ---- Stackdriver specific below ----
-	// stackdriverProjectID is the stackdriver project ID where the stats data are
-	// uploaded to. This is not the GCP project ID.
-	stackdriverProjectID string
-	// allowStackdriverCustomMetrics indicates whether it is allowed to send metrics to
-	// Stackdriver using "global" resource type and custom metric type if the
-	// metrics are not supported by "knative_revision" resource type. Setting this
-	// flag to "true" could cause extra Stackdriver charge.
-	// If backendDestination is not Stackdriver, this is ignored.
-	allowStackdriverCustomMetrics bool
+	stackdriverConfig MutableStackdriverConfig
 	// True if backendDestination equals to "stackdriver". Store this in a variable
 	// to reduce string comparison operations.
 	isStackdriverBackend bool
@@ -118,10 +114,40 @@ type metricsConfig struct {
 	// component, e.g. "custom.googleapis.com/knative.dev/serving/activator".
 	// Store this in a variable to reduce string join operations.
 	stackdriverCustomMetricTypePrefix string
+	// stackdriverSecret is the k8s secret that stores the GCP service account key that
+	// will be used to authenticate with stackdriver.
+	stackdriverSecret string
+}
+
+// Stackdriver configuration values that can be modified at runtime in ConfigMap config-observability.
+type MutableStackdriverConfig struct {
+	// ProjectID is the stackdriver project ID where the stats data are
+	// uploaded to. This is not necessarily the GCP project ID where the Kubernetes cluster is hosted.
+	// Required when the Kubernetes cluster is not hosted on GCE.
+	ProjectID string
+	// ProjectLocation is the GCP zone where the stackdriverProjectID is located.
+	// This is not necessarily the GCP project ID where the Kubernetes cluster is hosted.
+	// Required when the Kubernetes cluster is not hosted on GCE.
+	ProjectLocation string
+	// ClusterName is the cluster name with which the stats data will be associated in Stackdriver.
+	// Required when the Kubernetes cluster is not hosted on GCE.
+	ClusterName string
+	// ServiceAccountKey is the optional GCP service account key which will be used to
+	// authenticate with the stackdriver backend. If not provided, Google Application Default Credentials will
+	// be used (https://cloud.google.com/docs/authentication/production).
+	ServiceAccountKey string
+	// AllowStackdriverCustomMetrics indicates whether it is allowed to send metrics to
+	// Stackdriver using "global" resource type and custom metric type if the
+	// metrics are not supported by "knative_revision" resource type. Setting this
+	// flag to "true" could cause extra Stackdriver charge.
+	// If backendDestination is not Stackdriver, this is ignored.
+	AllowStackdriverCustomMetrics bool
 }
 
 func getMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metricsConfig, error) {
-	var mc metricsConfig
+	mc := metricsConfig{
+		stackdriverConfig: MutableStackdriverConfig{},
+	}
 
 	if ops.Domain == "" {
 		return nil, errors.New("metrics domain cannot be empty")
@@ -170,7 +196,11 @@ func getMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metricsC
 	// use the application default credentials. If that is not available, Opencensus would fail to create the
 	// metrics exporter.
 	if mc.backendDestination == Stackdriver {
-		mc.stackdriverProjectID = m[StackdriverProjectIDKey]
+		log.Printf("ANNIE: config-observability [%v]", m)
+		mc.stackdriverConfig.ProjectID = m[StackdriverProjectIDKey]
+		mc.stackdriverConfig.ProjectLocation = m[StackdriverProjectLocationKey]
+		mc.stackdriverConfig.ClusterName = m[StackdriverClusterNameKey]
+		mc.stackdriverConfig.ServiceAccountKey = m[StackdriverServiceAccountKeyKey]
 		mc.isStackdriverBackend = true
 		mc.stackdriverMetricTypePrefix = path.Join(mc.domain, mc.component)
 		mc.stackdriverCustomMetricTypePrefix = path.Join(customMetricTypePrefix, mc.component)
@@ -179,7 +209,7 @@ func getMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metricsC
 			if err != nil {
 				return nil, fmt.Errorf("invalid %s value %q", AllowStackdriverCustomMetricsKey, ascmStr)
 			}
-			mc.allowStackdriverCustomMetrics = ascmBool
+			mc.stackdriverConfig.AllowStackdriverCustomMetrics = ascmBool
 		}
 	}
 
@@ -254,7 +284,7 @@ func isNewExporterRequired(newConfig *metricsConfig) bool {
 	cc := getCurMetricsConfig()
 	if cc == nil || newConfig.backendDestination != cc.backendDestination {
 		return true
-	} else if newConfig.backendDestination == Stackdriver && newConfig.stackdriverProjectID != cc.stackdriverProjectID {
+	} else if newConfig.backendDestination == Stackdriver && newConfig.stackdriverConfig != cc.stackdriverConfig {
 		return true
 	}
 

@@ -280,6 +280,18 @@ func makeQueueContainer(rev *v1alpha1.Revision, loggingConfig *logging.Config, t
 			Name:  "SERVING_REQUEST_METRICS_BACKEND",
 			Value: observabilityConfig.RequestMetricsBackend,
 		}, {
+			Name:  "STACKDRIVER_PROJECT_ID",
+			Value: observabilityConfig.StackdriverConfig.ProjectID,
+		}, {
+			Name:  "STACKDRIVER_PROJECT_LOCATION",
+			Value: observabilityConfig.StackdriverConfig.ProjectLocation,
+		}, {
+			Name:  "STACKDRIVER_CLUSTER_NAME",
+			Value: observabilityConfig.StackdriverConfig.ClusterName,
+		}, {
+			Name:  "STACKDRIVER_SECRET_NAME",
+			Value: observabilityConfig.StackdriverConfig.ServiceAccountKey,
+		}, {
 			Name:  "TRACING_CONFIG_BACKEND",
 			Value: string(tracingConfig.Backend),
 		}, {

@@ -22,6 +22,28 @@ metadata:
 
 data:
   _example: |
+    # project-id field specifies the stackdriver project ID where stackdriver
+    # data will be stored.
+    # This field is optional and application default credentials will be used if this field is not provided. 
+    project-id: "<your stackdriver project id>"
+
+    # gcp-location field specifies the GCP region or zone where stackdriver
+    # data will be stored.
+    # When running on GCE, this field is optional and the GCE metadata server will be used if this field is not provided. 
+    # When running in other environments, this field is required to use stackdriver.
+    gcp-location: "<your stackdriver GCP location>"
+
+    # cluster-name field specifies a cluster name to associate with stackdriver data. 
+    # When running on GCE, this field is optional and the GCE metadata server will be used if this field is not provided.
+    # When running in other environments, this field is required to use stackdriver.
+    cluster-name: "<your kubernetes cluster name>"
+
+    # (optional) service-account-key-name is the name of the Kubernetes Secret containing
+    # the GCP service account key which will be used to authenticate with the stackdriver backend. 
+    # If not provided, Google Application Default Credentials will be used 
+    # (https://cloud.google.com/docs/authentication/production).
+    service-account-key:  "<your kubernetes secret name>"
+    
     ################################
     #                              #
     #    EXAMPLE CONFIGURATION     #
@@ -88,10 +110,21 @@ data:
     # Currently supported values: prometheus, stackdriver.
     metrics.request-metrics-backend-destination: prometheus
 
-    # metrics.stackdriver-project-id field specifies the stackdriver project ID. This
-    # field is optional. When running on GCE, application default credentials will be
-    # used if this field is not provided.
+    # metrics.stackdriver-project-id field specifies the stackdriver project ID where stackdriver
+    # data will be stored.
+    # This field is optional and application default credentials will be used if this field is not provided. 
     metrics.stackdriver-project-id: "<your stackdriver project id>"
+
+    # metrics.stackdriver-project-location field specifies the GCP region or zone where stackdriver
+    # data will be stored.
+    # When running on GCE, this field is optional and the GCE metadata server will be used if this field is not provided. 
+    # When running in other environments, this field is required to use stackdriver.
+    metrics.stackdriver-project-location: "<your stackdriver project location>"
+
+    # metrics.stackdriver-cluster-name field specifies a cluster name to associate with stackdriver data. 
+    # When running on GCE, this field is optional and the GCE metadata server will be used if this field is not provided.
+    # When running in other environments, this field is required to use stackdriver.
+    metrics.stackdriver-cluster-name: "<your kubernetes cluster name>"
 
     # metrics.allow-stackdriver-custom-metrics indicates whether it is allowed to send metrics to
     # Stackdriver using "global" resource type and custom metric type if the

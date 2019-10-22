@@ -46,7 +46,7 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.
 	var e view.Exporter
 	switch config.backendDestination {
 	case Stackdriver:
-		e, err = newStackdriverExporter(config, logger)
+	e, err = newStackdriverExporter(config, logger)
 	case Prometheus:
 		e, err = newPrometheusExporter(config, logger)
 	default:

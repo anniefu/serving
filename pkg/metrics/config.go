@@ -21,6 +21,7 @@ import (
 	"text/template"
 
 	corev1 "k8s.io/api/core/v1"
+	"knative.dev/pkg/metrics"
 )
 
 const (
@@ -43,6 +44,9 @@ type ObservabilityConfig struct {
 	// RequestMetricsBackend specifies the request metrics destination, e.g. Prometheus,
 	// Stackdriver.
 	RequestMetricsBackend string
+
+	// StackdriverConfig specifies metadata for the Stackdriver backend.
+	StackdriverConfig metrics.MutableStackdriverConfig
 }
 
 // NewObservabilityConfigFromConfigMap creates a ObservabilityConfig from the supplied ConfigMap
@@ -68,6 +72,22 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 
 	if mb, ok := configMap.Data["metrics.request-metrics-backend-destination"]; ok {
 		oc.RequestMetricsBackend = mb
+	}
+
+	if spi, ok := configMap.Data["metrics.stackdriver-project-id"]; ok {
+		oc.StackdriverConfig.ProjectID = spi
+	}
+
+	if spl, ok := configMap.Data["metrics.stackdriver-project-location"]; ok {
+		oc.StackdriverConfig.ProjectLocation = spl
+	}
+
+	if scn, ok := configMap.Data["metrics.stackdriver-cluster-name"]; ok {
+		oc.StackdriverConfig.ClusterName = scn
+	}
+
+	if ssak, ok := configMap.Data["metrics.stackdriver-service-account-key"]; ok {
+		oc.StackdriverConfig.ServiceAccountKey = ssak
 	}
 
 	return oc, nil

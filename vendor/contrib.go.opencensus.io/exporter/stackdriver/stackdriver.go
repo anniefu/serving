@@ -336,8 +336,10 @@ func NewExporter(o Options) (*Exporter, error) {
 	}
 	te, err := newTraceExporter(o)
 	if err != nil {
+		log.Printf("ANNIE: Creating a trace exporter failed [%v]", o)
 		return nil, err
 	}
+	log.Printf("ANNIE: Creating a trace exporter passed [%v]", o)
 	return &Exporter{
 		statsExporter: se,
 		traceExporter: te,

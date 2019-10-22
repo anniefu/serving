@@ -144,6 +144,12 @@ type config struct {
 	ServingService               string `split_words:"true"` // optional
 	ServingRequestMetricsBackend string `split_words:"true"` // optional
 
+	// Stackdriver configuration
+	StackdriverProjectID       string `split_words:"true"` // optional
+	StackdriverClusterName     string `split_words:"true"` // optional
+	StackdriverProjectLocation string `split_words:"true"` // optional
+	StackdriverSecretName      string `split_words:"true"` // optional
+
 	// /var/log configuration
 	EnableVarLogCollection bool   `split_words:"true"` // optional
 	UserContainerName      string `split_words:"true"` // optional
@@ -498,7 +504,7 @@ func supportsMetrics(env config, logger *zap.SugaredLogger) bool {
 		return false
 	}
 
-	if err := setupMetricsExporter(env.ServingRequestMetricsBackend); err != nil {
+	if err := setupMetricsExporter(&env); err != nil {
 		logger.Errorw("Error setting up request metrics exporter. Request metrics will be unavailable.", zap.Error(err))
 		return false
 	}
@@ -582,7 +588,7 @@ func pushRequestMetricHandler(currentHandler http.Handler, countMetric *stats.In
 	return handler
 }
 
-func setupMetricsExporter(backend string) error {
+func setupMetricsExporter(c *config) error {
 	// Set up OpenCensus exporter.
 	// NOTE: We use revision as the component instead of queue because queue is
 	// implementation specific. The current metrics are request relative. Using
@@ -594,7 +600,11 @@ func setupMetricsExporter(backend string) error {
 		Component:      "revision",
 		PrometheusPort: networking.UserQueueMetricsPort,
 		ConfigMap: map[string]string{
-			metrics.BackendDestinationKey: backend,
+			metrics.BackendDestinationKey:           c.ServingRequestMetricsBackend,
+			metrics.StackdriverProjectIDKey:         c.StackdriverProjectID,
+			metrics.StackdriverProjectLocationKey:   c.StackdriverProjectLocation,
+			metrics.StackdriverClusterNameKey:       c.StackdriverClusterName,
+			metrics.StackdriverServiceAccountKeyKey: c.StackdriverSecretName,
 		},
 	}
 	return metrics.UpdateExporter(ops, logger)

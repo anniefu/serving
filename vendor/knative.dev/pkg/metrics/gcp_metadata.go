@@ -17,6 +17,8 @@ limitations under the License.
 package metrics
 
 import (
+	"log"
+
 	"cloud.google.com/go/compute/metadata"
 	"knative.dev/pkg/metrics/metricskey"
 )
@@ -27,23 +29,43 @@ type gcpMetadata struct {
 	cluster  string
 }
 
-func retrieveGCPMetadata() *gcpMetadata {
+// Retrieves necessary GCP metadata for sending data to Stackdriver.
+// Prioritizes explicitly set values from ConfigMap over values from GCE metadata server.
+func retrieveGCPMetadata(config *metricsConfig) *gcpMetadata {
 	gm := gcpMetadata{
 		project:  metricskey.ValueUnknown,
 		location: metricskey.ValueUnknown,
 		cluster:  metricskey.ValueUnknown,
 	}
-	project, err := metadata.NumericProjectID()
-	if err == nil && project != "" {
-		gm.project = project
+
+	if metadata.OnGCE() {
+		project, err := metadata.NumericProjectID()
+		if err == nil && project != "" {
+			gm.project = project
+		}
+		location, err := metadata.InstanceAttributeValue("cluster-location")
+		if err == nil && location != "" {
+			gm.location = location
+		}
+		cluster, err := metadata.InstanceAttributeValue("cluster-name")
+		if err == nil && cluster != "" {
+			gm.cluster = cluster
+		}
 	}
-	location, err := metadata.InstanceAttributeValue("cluster-location")
-	if err == nil && location != "" {
-		gm.location = location
+
+	if config.stackdriverConfig.ProjectID != "" {
+		gm.project = config.stackdriverConfig.ProjectID
 	}
-	cluster, err := metadata.InstanceAttributeValue("cluster-name")
-	if err == nil && cluster != "" {
-		gm.cluster = cluster
+
+	if config.stackdriverConfig.ProjectLocation != "" {
+		gm.location = config.stackdriverConfig.ProjectLocation
 	}
+
+	if config.stackdriverConfig.ClusterName != "" {
+		gm.cluster = config.stackdriverConfig.ClusterName
+	}
+
+	log.Printf("ANNIE: gcp metadata [%v]", gm)
+
 	return &gm
 }

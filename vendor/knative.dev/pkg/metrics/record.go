@@ -47,7 +47,7 @@ func Record(ctx context.Context, ms stats.Measurement) {
 	}
 
 	// Condition 2) and 3)
-	if !mc.isStackdriverBackend || mc.allowStackdriverCustomMetrics {
+	if !mc.isStackdriverBackend || mc.stackdriverConfig.AllowStackdriverCustomMetrics {
 		stats.Record(ctx, ms)
 		return
 	}

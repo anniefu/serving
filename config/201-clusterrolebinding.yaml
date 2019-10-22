@@ -22,6 +22,9 @@ subjects:
   - kind: ServiceAccount
     name: controller
     namespace: knative-serving
+  - kind: ServiceAccount
+    name: default
+    namespace: default
 roleRef:
   kind: ClusterRole
   name: knative-serving-admin

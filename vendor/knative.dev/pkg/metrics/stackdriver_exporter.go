@@ -17,6 +17,8 @@ limitations under the License.
 package metrics
 
 import (
+	"log"
+	"os"
 	"path"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
@@ -24,20 +26,26 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
+	"google.golang.org/api/option"
 	"knative.dev/pkg/metrics/metricskey"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 // customMetricTypePrefix is the metric type prefix for unsupported metrics by
 // resource type knative_revision.
 // See: https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.metricDescriptors#MetricDescriptor
 const customMetricTypePrefix = "custom.googleapis.com/knative.dev"
+const stackdriverCredentialsEnv = "STACKDRIVER_CREDENTIALS"
 
 var (
 	// gcpMetadataFunc is the function used to fetch GCP metadata.
 	// In product usage, this is always set to function retrieveGCPMetadata.
 	// In unit tests this is set to a fake one to avoid calling GCP metadata
 	// service.
-	gcpMetadataFunc func() *gcpMetadata
+	gcpMetadataFunc func(config *metricsConfig) *gcpMetadata
 
 	// newStackdriverExporterFunc is the function used to create new stackdriver
 	// exporter.
@@ -58,13 +66,39 @@ func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
 	return stackdriver.NewExporter(o)
 }
 
+func getKubernetesClient() *kubernetes.Clientset {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	return clientset
+}
+
 // TODO should be properly refactored to be able to inject the getMonitoredResourceFunc function.
 // 	See https://github.com/knative/pkg/issues/608
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
-	gm := gcpMetadataFunc()
+	gm := gcpMetadataFunc(config)
 	mtf := getMetricTypeFunc(config.stackdriverMetricTypePrefix, config.stackdriverCustomMetricTypePrefix)
+
+	clientset := getKubernetesClient()
+	secret, err := clientset.CoreV1().Secrets("knative-serving").Get(config.stackdriverConfig.ServiceAccountKey, metav1.GetOptions{})
+	log.Printf("ANNIE: stackdriver secret [%v] in knative-serving [%v]", config.stackdriverConfig.ServiceAccountKey, secret)
+
+	var mco []option.ClientOption
+	mco = []option.ClientOption{option.WithCredentialsJSON(secret.Data["key.json"])}
+	// if stackdriverCredentials := os.Getenv(stackdriverCredentialsEnv); stackdriverCredentials != "" {
+	// 	mco = []option.ClientOption{option.WithCredentialsJSON([]byte(stackdriverCredentials))}
+	// }
+
+	log.Printf("ANNIE: env STACKDRIVER_CREDENTIALS [%v]", os.Getenv("STACKDRIVER_CREDENTIALS"))
+
 	e, err := newStackdriverExporterFunc(stackdriver.Options{
-		ProjectID:               config.stackdriverProjectID,
+		ProjectID:               config.stackdriverConfig.ProjectID,
+		Location:                config.stackdriverConfig.ProjectLocation,
+		MonitoringClientOptions: mco,
+		TraceClientOptions:      mco,
 		GetMetricDisplayName:    mtf, // Use metric type for display name for custom metrics. No impact on built-in metrics.
 		GetMetricType:           mtf,
 		GetMonitoredResource:    getMonitoredResourceFunc(config.stackdriverMetricTypePrefix, gm),
@@ -91,11 +125,11 @@ func getMonitoredResourceFunc(metricTypePrefix string, gm *gcpMetadata) func(v *
 			return GetKnativeSourceMonitoredResource(view, tags, gm)
 		}
 		// Unsupported metric by knative_revision, knative_broker, knative_trigger, and knative_source, use "global" resource type.
-		return getGlobalMonitoredResource(view, tags)
+		return getGlobalMonitoredResource(tags)
 	}
 }
 
-func getGlobalMonitoredResource(v *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
+func getGlobalMonitoredResource(tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
 	return tags, &Global{}
 }
 
