@@ -30,7 +30,8 @@ required = [
 
 [[override]]
   name = "knative.dev/pkg"
-  branch = "release-0.10"
+  revision = "d62d6b389417178900372cc232c622c4b9c91e93"
+  source = "https://github.com/anniefu/pkg"
 
 [[constraint]]
   name = "knative.dev/caching"
