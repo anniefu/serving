@@ -18,6 +18,7 @@ package main
 
 import (
 	// The set of controllers this controller process runs.
+	"knative.dev/serving/pkg/metrics"
 	"knative.dev/serving/pkg/reconciler/configuration"
 	"knative.dev/serving/pkg/reconciler/gc"
 	"knative.dev/serving/pkg/reconciler/labeler"
@@ -31,6 +32,9 @@ import (
 )
 
 func main() {
+	// Configures state from pkgmetrics
+	metrics.ConfigurePkgMetrics()
+
 	sharedmain.Main("controller",
 		configuration.NewController,
 		labeler.NewController,
