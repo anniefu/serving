@@ -101,6 +101,8 @@ spec:
             value: config-logging
           - name: CONFIG_OBSERVABILITY_NAME
             value: config-observability
+          - name: KUBERNETES_MIN_VERSION
+            value: v1.13.0
           # Used for Stackdriver only.
           - name: METRICS_DOMAIN
             value: knative.dev/internal/serving

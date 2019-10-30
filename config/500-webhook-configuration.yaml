@@ -19,9 +19,7 @@ metadata:
   labels:
     serving.knative.dev/release: devel
 webhooks:
-- admissionReviewVersions:
-  - v1beta1
-  clientConfig:
+- clientConfig:
     service:
       name: webhook
       namespace: knative-serving
@@ -35,9 +33,7 @@ metadata:
   labels:
     serving.knative.dev/release: devel
 webhooks:
-- admissionReviewVersions:
-  - v1beta1
-  clientConfig:
+- clientConfig:
     service:
       name: webhook
       namespace: knative-serving

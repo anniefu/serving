@@ -66,5 +66,7 @@ spec:
           value: config-observability
         - name: METRICS_DOMAIN
           value: knative.dev/serving
+        - name: KUBERNETES_MIN_VERSION
+          value: v1.13.0
         securityContext:
           allowPrivilegeEscalation: false
