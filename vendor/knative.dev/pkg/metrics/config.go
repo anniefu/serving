@@ -57,6 +57,7 @@ const (
 	Stackdriver metricsBackend = "stackdriver"
 	// Prometheus is used for Prometheus backend
 	Prometheus metricsBackend = "prometheus"
+	OpenCensus metricsBackend = "opencensus"
 
 	defaultBackendEnvName = "DEFAULT_METRICS_BACKEND"
 

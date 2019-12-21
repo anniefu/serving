@@ -20,6 +20,8 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+
+	"contrib.go.opencensus.io/exporter/ocagent"
 )
 
 var (
@@ -112,6 +114,17 @@ func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) error {
 	return nil
 }
 
+func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
+	logger.Info("Setting up OpenCensus")
+	oce, err := ocagent.NewExporter()
+	if err != nil {
+		return nil, err
+	}
+
+	view.RegisterExporter(oce)
+	return oce, nil
+}
+
 // isNewExporterRequired compares the non-nil newConfig against curMetricsConfig. When backend changes,
 // or stackdriver project ID changes for stackdriver backend, we need to update the metrics exporter.
 // This function is not implicitly thread-safe.
@@ -140,6 +153,8 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.
 	var err error
 	var e view.Exporter
 	switch config.backendDestination {
+	case "opencensus":
+		e, err = newOpenCensusExporter(config, logger)
 	case Stackdriver:
 		e, err = newStackdriverExporter(config, logger)
 	case Prometheus:
