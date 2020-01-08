@@ -15,6 +15,8 @@ package metrics
 
 import (
 	"fmt"
+	"log"
+	"net"
 	"sync"
 
 	"go.opencensus.io/stats/view"
@@ -116,7 +118,14 @@ func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) error {
 
 func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
 	logger.Info("Setting up OpenCensus")
-	oce, err := ocagent.NewExporter()
+	ip := "oc-collector.default.svc.cluster.local"
+
+	names, lookupErr := net.LookupHost(ip)
+	// addr := fmt.Sprintf("%v:55678", names[0])
+	oce, err := ocagent.NewExporter(
+		// ocagent.WithAddress(addr),
+		ocagent.WithInsecure())
+	log.Printf("ANNIE: names: %#v, lookupErr: %#v", names, lookupErr)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +162,7 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.
 	var err error
 	var e view.Exporter
 	switch config.backendDestination {
-	case "opencensus":
+	case OpenCensus:
 		e, err = newOpenCensusExporter(config, logger)
 	case Stackdriver:
 		e, err = newStackdriverExporter(config, logger)

@@ -171,7 +171,7 @@ func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metri
 	}
 	lb := metricsBackend(strings.ToLower(backend))
 	switch lb {
-	case Stackdriver, Prometheus:
+	case Stackdriver, Prometheus, OpenCensus:
 		mc.backendDestination = lb
 	default:
 		return nil, fmt.Errorf("unsupported metrics backend value %q", backend)

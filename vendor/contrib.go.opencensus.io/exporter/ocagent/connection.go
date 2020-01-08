@@ -15,6 +15,7 @@
 package ocagent
 
 import (
+	"log"
 	"math/rand"
 	"sync/atomic"
 	"time"
@@ -88,7 +89,9 @@ func (ae *Exporter) indefiniteBackgroundConnection() error {
 
 		if err := ae.connect(); err == nil {
 			ae.setStateConnected()
+			log.Println("ANNIE: connected...")
 		} else {
+			log.Printf("ANNIE: connection error: %#v", err)
 			ae.setStateDisconnected(err)
 		}
 
@@ -100,6 +103,7 @@ func (ae *Exporter) indefiniteBackgroundConnection() error {
 		case <-ae.stopCh:
 			return errStopped
 		case <-time.After(connReattemptPeriod + jitter):
+			log.Println("ANNIE: Attempting reconnection")
 		}
 	}
 }

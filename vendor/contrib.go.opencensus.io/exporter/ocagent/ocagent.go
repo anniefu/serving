@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"sync"
 	"time"
 	"unsafe"
@@ -275,6 +276,7 @@ func (ae *Exporter) createMetricsServiceConnection(cc *grpc.ClientConn, node *co
 	ae.metricsExporter = metricsExporter
 	ae.mu.Unlock()
 
+	log.Println("ANNIE: ocagent metrics exporter setup")
 	// With that we are good to go and can start sending metrics
 	return nil
 }
@@ -450,6 +452,7 @@ func (ae *Exporter) ExportMetricsServiceRequest(batch *agentmetricspb.ExportMetr
 		err := ae.metricsExporter.Send(batch)
 		ae.senderMu.Unlock()
 		if err != nil {
+			log.Printf("ANNIE: Error sending metrics: %#v", err)
 			if err == io.EOF {
 				ae.recvMu.Lock()
 				// Perform a .Recv to try to find out why the RPC actually ended.
@@ -459,6 +462,7 @@ func (ae *Exporter) ExportMetricsServiceRequest(batch *agentmetricspb.ExportMetr
 				for {
 					_, err = ae.metricsExporter.Recv()
 					if err != nil {
+						log.Printf("ANNIE: grpc Recv call error: %#v", err)
 						break
 					}
 				}
