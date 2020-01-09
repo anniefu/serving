@@ -116,14 +116,30 @@ func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) error {
 	return nil
 }
 
+// func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
+// 	opts := []ocagent.ExporterOption{ocagent.WithServiceName(config.component)}
+// 	// if config.collectorAddress != "" {
+// 	opts = append(opts, ocagent.WithAddress("10.7.249.52:55678"))
+// 	// }
+// 	opts = append(opts, ocagent.WithInsecure())
+// 	e, err := ocagent.NewExporter(opts...)
+// 	if err != nil {
+// 		logger.Errorw("Failed to create the OpenCensus exporter.", zap.Error(err))
+// 		return nil, err
+// 	}
+// 	logger.Infof("Created OpenCensus exporter with config: %+v.", *config)
+// 	// Start the server for Prometheus scraping
+// 	return e, nil
+// }
+
 func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
 	logger.Info("Setting up OpenCensus")
 	ip := "oc-collector.default.svc.cluster.local"
-
 	names, lookupErr := net.LookupHost(ip)
 	// addr := fmt.Sprintf("%v:55678", names[0])
 	oce, err := ocagent.NewExporter(
-		// ocagent.WithAddress(addr),
+		ocagent.WithServiceName(config.component),
+		ocagent.WithAddress("10.7.249.52:55678"),
 		ocagent.WithInsecure())
 	log.Printf("ANNIE: names: %#v, lookupErr: %#v", names, lookupErr)
 	if err != nil {
