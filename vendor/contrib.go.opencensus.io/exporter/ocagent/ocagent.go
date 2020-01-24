@@ -128,6 +128,7 @@ func NewUnstartedExporter(opts ...ExporterOption) (*Exporter, error) {
 	e.viewDataBundler = viewDataBundler
 	e.nodeInfo = NodeWithStartTime(e.serviceName)
 	if e.resourceDetector != nil {
+		log.Println("ANNIEOC: non-nil resource detector")
 		res, err := e.resourceDetector(context.Background())
 		if err != nil {
 			panic(fmt.Sprintf("Error detecting resource. err:%v\n", err))
@@ -139,6 +140,7 @@ func NewUnstartedExporter(opts ...ExporterOption) (*Exporter, error) {
 		e.resource = resourceProtoFromEnv()
 	}
 
+	log.Printf("ANNIE: ocagent resource %#v", e.resource)
 	return e, nil
 }
 
@@ -438,11 +440,11 @@ func (ae *Exporter) ExportView(vd *view.Data) {
 
 // ExportMetricsServiceRequest sends proto metrics with the metrics service client.
 func (ae *Exporter) ExportMetricsServiceRequest(batch *agentmetricspb.ExportMetricsServiceRequest) error {
-	log.Println("ANNIE: ExportMetricsServiceRequest called")
 	if batch == nil || len(batch.Metrics) == 0 {
 		return nil
 	}
 
+	log.Printf("ANNIE: ExportMetricsServiceRequest called. req: %#v", batch.Resource)
 	select {
 	case <-ae.stopCh:
 		return errStopped
@@ -466,6 +468,7 @@ func (ae *Exporter) ExportMetricsServiceRequest(batch *agentmetricspb.ExportMetr
 					log.Printf("ANNIE: error sending metrics: %#v", err)
 					_, err = ae.metricsExporter.Recv()
 					if err != nil {
+						log.Printf("ANNIE: error sending recv: %#v", err)
 						break
 					}
 				}
@@ -544,7 +547,7 @@ func (ae *Exporter) uploadViewData(vdl []*view.Data) {
 	}
 	req := &agentmetricspb.ExportMetricsServiceRequest{
 		Metrics:  protoMetrics,
-		Resource: resourceProtoFromEnv(),
+		Resource: ae.resource,
 		// TODO:(@odeke-em)
 		// a) Figure out how to derive a Node from the environment
 		// or better letting users of the exporter configure it.

@@ -22,6 +22,7 @@ directly to Stackdriver Metrics.
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
@@ -90,6 +91,8 @@ func (se *statsExporter) uploadMetrics(metrics []*metricdata.Metric) error {
 			continue
 		}
 	}
+
+	log.Println("ANNIESD: uploadMetrics")
 
 	var allTimeSeries []*monitoringpb.TimeSeries
 	for _, metric := range metrics {
@@ -171,7 +174,12 @@ func (se *statsExporter) metricToMpbTs(ctx context.Context, metric *metricdata.M
 		var rsc *monitoredrespb.MonitoredResource
 		var mr monitoredresource.Interface
 		if se.o.ResourceByDescriptor != nil {
+			log.Printf("ANNIESD: before labels: %#v", labels)
 			labels, mr = se.o.ResourceByDescriptor(&metric.Descriptor, labels)
+
+			log.Printf("ANNIESD: after labels: %#v", labels)
+			mrType, mrLabels := mr.MonitoredResource()
+			log.Printf("ANNIESD: monitored resource type: %#v, labels: %#v", mrType, mrLabels)
 			// TODO(rghetia): optimize this. It is inefficient to convert this for all metrics.
 			rsc = convertMonitoredResourceToPB(mr)
 			if rsc.Type == "" {

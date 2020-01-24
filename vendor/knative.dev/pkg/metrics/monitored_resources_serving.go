@@ -17,6 +17,8 @@ limitations under the License.
 package metrics
 
 import (
+	"log"
+
 	"contrib.go.opencensus.io/exporter/stackdriver/monitoredresource"
 	"go.opencensus.io/metric/metricdata"
 	"knative.dev/pkg/metrics/metricskey"
@@ -49,6 +51,7 @@ func (kr *KnativeRevision) MonitoredResource() (resType string, labels map[strin
 
 func GetKnativeRevisionMonitoredResource(
 	des *metricdata.Descriptor, tags map[string]string, gm *gcpMetadata) (map[string]string, monitoredresource.Interface) {
+	log.Printf("ANNIESD: GetKnativeRevisionMonitoredResource: metric descriptor: %#v, tags: %#v", des, tags)
 	kr := &KnativeRevision{
 		// The first three resource labels are from metadata.
 		Project:     gm.project,
@@ -69,5 +72,6 @@ func GetKnativeRevisionMonitoredResource(
 		}
 	}
 
+	log.Printf("ANNIESD: GetKnativeRevisionMonitoredResource: metric descriptor: %#v, tags: %#v, metricLabels: %#v, KnativeRevision: %#v", des, tags, metricLabels, kr)
 	return metricLabels, kr
 }

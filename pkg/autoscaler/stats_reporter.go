@@ -19,6 +19,7 @@ package autoscaler
 import (
 	"context"
 	"errors"
+	"path"
 
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/metrics/metricskey"
@@ -84,26 +85,28 @@ func register() {
 	// Create views to see our measurements. This can return an error if
 	// a previously-registered view has the same name with a different value.
 	// View name defaults to the measure name if unspecified.
+	component := "autoscaler"
 	if err := view.Register(
 		&view.View{
+			Name:        path.Join(component, desiredPodCountM.Name()),
 			Description: "Number of pods autoscaler wants to allocate",
 			Measure:     desiredPodCountM,
 			Aggregation: view.LastValue(),
-			TagKeys:     metrics.CommonRevisionKeys,
 		},
 		&view.View{
+			Name:        path.Join(component, requestedPodCountM.Name()),
 			Description: "Number of pods autoscaler requested from Kubernetes",
 			Measure:     requestedPodCountM,
 			Aggregation: view.LastValue(),
-			TagKeys:     metrics.CommonRevisionKeys,
 		},
 		&view.View{
+			Name:        path.Join(component, actualPodCountM.Name()),
 			Description: "Number of pods that are allocated currently",
 			Measure:     actualPodCountM,
 			Aggregation: view.LastValue(),
-			TagKeys:     metrics.CommonRevisionKeys,
 		},
 		&view.View{
+			Name:        path.Join(component, stableRequestConcurrencyM.Name()),
 			Description: "Average of requests count over the stable window",
 			Measure:     stableRequestConcurrencyM,
 			Aggregation: view.LastValue(),
@@ -192,11 +195,11 @@ func NewStatsReporter(ns, service, config, revision string) (*Reporter, error) {
 	// and reuse it for reporting all of our metrics. Note that service names
 	// can be an empty string, so it needs a special treatment.
 	ctx, err := tag.New(
-		context.Background(),
-		tag.Insert(metrics.NamespaceTagKey, ns),
-		tag.Insert(metrics.ServiceTagKey, valueOrUnknown(service)),
-		tag.Insert(metrics.ConfigTagKey, config),
-		tag.Insert(metrics.RevisionTagKey, revision))
+		context.Background())
+	// tag.Insert(metrics.NamespaceTagKey, ns),
+	// tag.Insert(metrics.ServiceTagKey, valueOrUnknown(service)),
+	// tag.Insert(metrics.ConfigTagKey, config),
+	// tag.Insert(metrics.RevisionTagKey, revision))
 	if err != nil {
 		return nil, err
 	}

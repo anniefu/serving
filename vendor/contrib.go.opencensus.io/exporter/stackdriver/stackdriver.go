@@ -298,6 +298,7 @@ type Exporter struct {
 // NewExporter creates a new Exporter that implements both stats.Exporter and
 // trace.Exporter.
 func NewExporter(o Options) (*Exporter, error) {
+	log.Println("ANNIESD: exporter/stackdriver NewExporter")
 	if o.ProjectID == "" {
 		ctx := o.Context
 		if ctx == nil {

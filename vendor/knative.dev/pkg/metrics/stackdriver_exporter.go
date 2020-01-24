@@ -18,6 +18,7 @@ package metrics
 
 import (
 	"fmt"
+	"log"
 	"path"
 	"sync"
 
@@ -101,6 +102,7 @@ func init() {
 }
 
 func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
+	log.Println("ANNIESD: newOpencensusSdExporter")
 	e, err := stackdriver.NewExporter(o)
 	if err == nil {
 		// Start the exporter.
@@ -130,11 +132,23 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 		ReportingInterval:       config.reportingPeriod,
 		DefaultMonitoringLabels: &stackdriver.Labels{},
 	})
+
+	log.Printf("ANNIESD: %#v", stackdriver.Options{
+		ProjectID:               gm.project,
+		Location:                gm.location,
+		MonitoringClientOptions: co,
+		TraceClientOptions:      co,
+		GetMetricPrefix:         mpf,
+		ResourceByDescriptor:    getResourceByDescriptorFunc(config.stackdriverMetricTypePrefix, gm),
+		ReportingInterval:       config.reportingPeriod,
+		DefaultMonitoringLabels: &stackdriver.Labels{},
+	})
 	if err != nil {
 		logger.Errorw("Failed to create the Stackdriver exporter: ", zap.Error(err))
 		return nil, err
 	}
 	logger.Infof("Created Opencensus Stackdriver exporter with config %v", config)
+	logger.Info("ANNIESD: what")
 	return e, nil
 }
 
@@ -179,6 +193,7 @@ func getMergedGCPMetadata(config *metricsConfig) *gcpMetadata {
 }
 
 func getResourceByDescriptorFunc(metricTypePrefix string, gm *gcpMetadata) func(*metricdata.Descriptor, map[string]string) (map[string]string, monitoredresource.Interface) {
+	log.Println("ANNIESD: getResourceByDescriptorFunc called")
 	return func(des *metricdata.Descriptor, tags map[string]string) (map[string]string, monitoredresource.Interface) {
 		metricType := path.Join(metricTypePrefix, des.Name)
 		if metricskey.KnativeRevisionMetrics.Has(metricType) {

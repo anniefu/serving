@@ -16,6 +16,7 @@ package stackdriver // import "contrib.go.opencensus.io/exporter/stackdriver"
 
 import (
 	"fmt"
+	"log"
 
 	"go.opencensus.io/resource"
 	"go.opencensus.io/resource/resourcekeys"
@@ -31,6 +32,8 @@ const (
 	stackdriverGenericTaskNamespace = "contrib.opencensus.io/exporter/stackdriver/generic_task/namespace"
 	stackdriverGenericTaskJob       = "contrib.opencensus.io/exporter/stackdriver/generic_task/job"
 	stackdriverGenericTaskID        = "contrib.opencensus.io/exporter/stackdriver/generic_task/task_id"
+
+	knativeResType = "knative_revision"
 )
 
 // Mappings for the well-known OpenCensus resources to applicable Stackdriver resources.
@@ -93,10 +96,12 @@ func transformResource(match, input map[string]string) (map[string]string, bool)
 			return nil, true
 		}
 	}
+	log.Printf("ANNIESD: input labels: %#v, output labels: %#v", input, output)
 	return output, false
 }
 
 func defaultMapResource(res *resource.Resource) *monitoredrespb.MonitoredResource {
+	log.Printf("ANNIEOC: defaultMapResource, res: %#v", res)
 	match := genericResourceMap
 	result := &monitoredrespb.MonitoredResource{
 		Type: "global",
@@ -121,6 +126,9 @@ func defaultMapResource(res *resource.Resource) *monitoredrespb.MonitoredResourc
 	case res.Labels[resourcekeys.CloudKeyProvider] == resourcekeys.CloudProviderAWS:
 		result.Type = "aws_ec2_instance"
 		match = awsResourceMap
+	case res.Type == knativeResType:
+		result.Type = knativeResType
+		match = res.Labels
 	}
 
 	var missing bool

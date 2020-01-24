@@ -147,6 +147,10 @@ func NewStackdriverClientConfigFromMap(config map[string]string) *StackdriverCli
 // Record applies the `ros` Options to `ms` and then records the resulting
 // measurements in the metricsConfig's designated backend.
 func (mc *metricsConfig) Record(ctx context.Context, ms stats.Measurement, ros ...stats.Options) error {
+	// tagMap := tag.FromContext(ctx)
+	// if tagMap != nil {
+	// 	log.Printf("ANNIESD: Record called with ctx: %#v, stat: %#v", tagMap, ms.Measure().Description())
+	// }
 	if mc == nil || mc.recorder == nil {
 		return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(ms))...)
 	}

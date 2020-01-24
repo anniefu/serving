@@ -110,5 +110,8 @@ data:
     # enabled, the Knative Serving pods expose the profiling data on an alternate HTTP port 8008.
     # The HTTP context root for profiling is then /debug/pprof/.
     profiling.enable: "false"
-  metrics.backend-destination: opencensus
-  metrics.collector-address: "10.7.249.52:55678"
+  metrics.backend-destination: prometheus
+  # metrics.collector-address: "10.7.255.23:55678"
+  metrics.collector-address: "10.15.245.97:55678"
+
+  

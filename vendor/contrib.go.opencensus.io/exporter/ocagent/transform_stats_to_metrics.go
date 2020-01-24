@@ -16,6 +16,8 @@ package ocagent
 
 import (
 	"errors"
+	"log"
+	"strings"
 	"time"
 
 	"go.opencensus.io/stats"
@@ -51,6 +53,18 @@ func viewDataToMetric(vd *view.Data) (*metricspb.Metric, error) {
 	metric := &metricspb.Metric{
 		MetricDescriptor: descriptor,
 		Timeseries:       timeseries,
+	}
+
+	if metric.MetricDescriptor != nil && strings.Contains(metric.MetricDescriptor.Name, "autoscaler") && len(metric.Timeseries) > 0 {
+		log.Printf("ANNIEOC: viewDataToMetric Metric: %#v, %#v, %#v, %#v", metric.MetricDescriptor.Name, metric.Timeseries[0].LabelValues, metric.Timeseries[0], metric.Resource)
+		for k, labelKey := range metric.MetricDescriptor.LabelKeys {
+			log.Printf("ANNIEOC: metric.Name %v, label key %d: %#v", metric.MetricDescriptor.Name, k, labelKey)
+		}
+		for _, met := range metric.Timeseries {
+			for idx, labelValue := range met.LabelValues {
+				log.Printf("ANNIEOC: metric.Name %v, label value %d: %#v", metric.MetricDescriptor.Name, idx, labelValue)
+			}
+		}
 	}
 	return metric, nil
 }

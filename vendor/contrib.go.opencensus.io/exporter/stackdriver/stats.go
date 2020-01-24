@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"sort"
@@ -85,6 +86,7 @@ var (
 // Only one Stackdriver exporter should be created per ProjectID per process, any subsequent
 // invocations of NewExporter with the same ProjectID will return an error.
 func newStatsExporter(o Options) (*statsExporter, error) {
+	log.Println("ANNIESD: newStatsExporter")
 	if strings.TrimSpace(o.ProjectID) == "" {
 		return nil, errBlankProjectID
 	}
@@ -208,6 +210,7 @@ func (e *statsExporter) Flush() {
 }
 
 func (e *statsExporter) uploadStats(vds []*view.Data) error {
+	log.Println("ANNIESD: uploadStats")
 	ctx, cancel := newContextWithTimeout(e.o.Context, e.o.Timeout)
 	defer cancel()
 	ctx, span := trace.StartSpan(

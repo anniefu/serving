@@ -14,13 +14,30 @@ limitations under the License.
 package metrics
 
 import (
+	"context"
+
 	"contrib.go.opencensus.io/exporter/ocagent"
+	"go.opencensus.io/resource"
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 )
 
 func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
 	opts := []ocagent.ExporterOption{ocagent.WithServiceName(config.component)}
+	opts = append(opts, ocagent.WithResourceDetector(func(context.Context) (*resource.Resource, error) {
+		return &resource.Resource{
+			Type: "knative_revision",
+			Labels: map[string]string{
+				"project_id":         "anniefu-knative-dev",
+				"service_name":       "helloworld-go",
+				"revision_name":      "helloworld-go-hfc7j",
+				"location":           "us-central1-c",
+				"configuration_name": "helloworld-go",
+				"cluster_name":       "red",
+				"namespace_name":     "default",
+			},
+		}, nil
+	}))
 	if config.collectorAddress != "" {
 		opts = append(opts, ocagent.WithAddress(config.collectorAddress))
 	}
