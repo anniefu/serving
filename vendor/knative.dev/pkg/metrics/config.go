@@ -264,7 +264,7 @@ func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metri
 			return nil, fmt.Errorf("invalid %s value %q", ReportingPeriodKey, repStr)
 		}
 		mc.reportingPeriod = time.Duration(repInt) * time.Second
-	} else if mc.backendDestination == Stackdriver {
+	} else if mc.backendDestination == Stackdriver || mc.backendDestination == OpenCensus {
 		mc.reportingPeriod = 60 * time.Second
 	} else if mc.backendDestination == Prometheus {
 		mc.reportingPeriod = 5 * time.Second

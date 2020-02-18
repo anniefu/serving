@@ -28,13 +28,13 @@ func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 		return &resource.Resource{
 			Type: "knative_revision",
 			Labels: map[string]string{
-				"project_id":         "anniefu-knative-dev",
-				"service_name":       "helloworld-go",
-				"revision_name":      "helloworld-go-hfc7j",
-				"location":           "us-central1-c",
+				// "project_id":         "anniefu-knative-dev",
+				"service_name":  "helloworld-go",
+				"revision_name": "helloworld-go-hfc7j",
+				// "location":           "us-central1-c",
 				"configuration_name": "helloworld-go",
-				"cluster_name":       "red",
-				"namespace_name":     "default",
+				// "cluster_name":       "red",
+				"namespace_name": "default",
 			},
 		}, nil
 	}))
