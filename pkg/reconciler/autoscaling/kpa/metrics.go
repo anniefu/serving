@@ -17,6 +17,7 @@ limitations under the License.
 package kpa
 
 import (
+	"path"
 	"knative.dev/serving/pkg/metrics"
 
 	"go.opencensus.io/stats"
@@ -54,18 +55,19 @@ func register() {
 	// Create views to see our measurements. This can return an error if
 	// a previously-registered view has the same name with a different value.
 	// View name defaults to the measure name if unspecified.
+	component := "autoscaler"
 	if err := view.Register(
 		&view.View{
+			Name:        path.Join(component, requestedPodCountM.Name()),
 			Description: "Number of pods autoscaler requested from Kubernetes",
 			Measure:     requestedPodCountM,
 			Aggregation: view.LastValue(),
-			TagKeys:     metrics.CommonRevisionKeys,
 		},
 		&view.View{
+			Name:        path.Join(component, actualPodCountM.Name()),
 			Description: "Number of pods that are allocated currently",
 			Measure:     actualPodCountM,
 			Aggregation: view.LastValue(),
-			TagKeys:     metrics.CommonRevisionKeys,
 		},
 		&view.View{
 			Description: "Number of pods that are not ready currently",

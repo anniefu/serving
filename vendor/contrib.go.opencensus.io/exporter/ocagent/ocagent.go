@@ -537,7 +537,7 @@ func (ae *Exporter) uploadViewData(vdl []*view.Data) {
 	}
 	req := &agentmetricspb.ExportMetricsServiceRequest{
 		Metrics:  protoMetrics,
-		Resource: resourceProtoFromEnv(),
+		Resource: ae.resource,
 		// TODO:(@odeke-em)
 		// a) Figure out how to derive a Node from the environment
 		// or better letting users of the exporter configure it.

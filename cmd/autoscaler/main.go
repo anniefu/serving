@@ -52,7 +52,7 @@ import (
 	asmetrics "knative.dev/serving/pkg/autoscaler/metrics"
 	"knative.dev/serving/pkg/autoscaler/scaling"
 	"knative.dev/serving/pkg/autoscaler/statserver"
-	smetrics "knative.dev/serving/pkg/metrics"
+	// smetrics "knative.dev/serving/pkg/metrics"
 	"knative.dev/serving/pkg/reconciler/autoscaling/kpa"
 	"knative.dev/serving/pkg/reconciler/metric"
 	"knative.dev/serving/pkg/resources"
@@ -204,14 +204,15 @@ func uniScalerFactoryFunc(endpointsInformer corev1informers.EndpointsInformer,
 			return nil, fmt.Errorf("%s decider has empty ServiceName", decider.Name)
 		}
 
-		serviceName := decider.Labels[serving.ServiceLabelKey] // This can be empty.
-		configName := decider.Labels[serving.ConfigurationLabelKey]
+		// serviceName := decider.Labels[serving.ServiceLabelKey] // This can be empty.
+		// configName := decider.Labels[serving.ConfigurationLabelKey]
 
 		// Create a stats reporter which tags statistics by PA namespace, configuration name, and PA name.
-		ctx, err := smetrics.RevisionContext(decider.Namespace, serviceName, configName, decider.Name)
-		if err != nil {
-			return nil, err
-		}
+		// ctx, err := scontext.metrics.RevisionContext(decider.Namespace, serviceName, configName, decider.Name)
+		ctx := context.Background()
+		// if err != nil {
+		// 	return nil, err
+		// }
 
 		return scaling.New(decider.Namespace, decider.Name, metricClient, endpointsInformer.Lister(), &decider.Spec, ctx)
 	}
