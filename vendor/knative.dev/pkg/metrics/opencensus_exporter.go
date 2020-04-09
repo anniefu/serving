@@ -18,6 +18,7 @@ import (
 
 	"crypto/tls"
 	"fmt"
+
 	"go.opencensus.io/resource"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
@@ -33,9 +34,6 @@ func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 		return &resource.Resource{
 			Type: "knative_revision",
 			Labels: map[string]string{
-				"project_id":         "anniefu-knative-dev",
-				"location":           "us-central1-a",
-				"cluster_name":       "purple",
 				"service_name":       "helloworld-go",
 				"revision_name":      "helloworld-go-hfc7j",
 				"configuration_name": "helloworld-go",
